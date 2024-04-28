@@ -9,6 +9,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -54,25 +55,19 @@ public class JwtTokenProvider {
         }
     }
 
-    public Authentication getAuthentication(String token) {
+    public List<String> obtenerRolesDelUsuario(String token) {
         try {
             Claims claims = Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody();
-            List<SimpleGrantedAuthority> authorities = null;
             if (claims.containsKey(ROLES_CLAIM) && claims.get(ROLES_CLAIM) != null) {
-                authorities = ((List<?>) claims.get(ROLES_CLAIM)).stream()
-                        .map(authority -> new SimpleGrantedAuthority((String) authority))
-                        .collect(Collectors.toList());
+                return (List<String>) claims.get(ROLES_CLAIM);
             } else {
-                // Si el claim de roles está ausente o es nulo, puedes lanzar una excepción o devolver null según tus necesidades
+                // Si el claim de roles está ausente o es nulo, puedes lanzar una excepción o devolver una lista vacía según tus necesidades
                 throw new IllegalArgumentException("El claim de roles no está presente en el token o es nulo.");
             }
-            String username = claims.getSubject();
-            return new UsernamePasswordAuthenticationToken(username, null, authorities);
         } catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException ex) {
-            // Manejo de errores durante la obtención de la autenticación
-            // Puedes lanzar una excepción personalizada o devolver null según tu necesidad
-            return null;
+            // Manejo de errores durante la obtención de los roles del usuario
+            // Puedes lanzar una excepción personalizada o devolver una lista vacía según tu necesidad
+            return Collections.emptyList();
         }
     }
-
 }
