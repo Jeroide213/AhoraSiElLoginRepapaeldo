@@ -1,6 +1,6 @@
 package com.example.AhoraSiElLoginRepapaeldo.Controller;
 
-import com.example.AhoraSiElLoginRepapaeldo.Model.LoginRequest;
+import com.example.AhoraSiElLoginRepapaeldo.Model.User;
 import com.example.AhoraSiElLoginRepapaeldo.Service.AuthenticationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,14 +17,21 @@ public class AuthenticationController {
     private AuthenticationService authenticationService;
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) {
-        // Extraer el nombre de usuario y la contraseña del LoginRequest
-        String username = loginRequest.getUsername();
-        String password = loginRequest.getPassword();
+    public ResponseEntity<?> login(@RequestBody User user) {
+        String username = user.getUsername();
+        String password = user.getPassword();
 
         // Autenticar al usuario y generar el token JWT
         ResponseEntity<String> response = authenticationService.authenticate(username, password);
 
-        return response;
+        // Verificar si la autenticación fue exitosa
+        if (response.getStatusCode().is2xxSuccessful()) {
+            // Si la autenticación fue exitosa, devolver el token JWT en la respuesta
+            return ResponseEntity.ok(response.getBody());
+        } else {
+            // Si la autenticación falló, devolver un mensaje de error adecuado
+            return ResponseEntity.status(response.getStatusCode()).body("Error de autenticación: Credenciales incorrectas");
+        }
     }
+
 }

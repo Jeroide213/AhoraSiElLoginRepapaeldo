@@ -1,17 +1,16 @@
 package com.example.AhoraSiElLoginRepapaeldo.Service;
 
+import com.example.AhoraSiElLoginRepapaeldo.Config.CustomAuthenticationManager;
 import com.example.AhoraSiElLoginRepapaeldo.Config.JwtTokenProvider;
-import com.example.AhoraSiElLoginRepapaeldo.Model.User;
-import com.example.AhoraSiElLoginRepapaeldo.Repository.UserRepository;
+import com.example.AhoraSiElLoginRepapaeldo.Exceptions.CustomAuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -19,26 +18,37 @@ import java.util.List;
 @Service
 public class AuthenticationService {
     @Autowired
-    private AuthenticationManager authenticationManager;
+    private CustomAuthenticationManager authenticationManager;
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
     public ResponseEntity<String> authenticate(String username, String password) {
-        // Autenticar al usuario utilizando Spring Security AuthenticationManager
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password));
+        if (StringUtils.isEmpty(username) || StringUtils.isEmpty(password)) {
+            throw new CustomAuthenticationException("Nombre de usuario y contraseña son requeridos");
+        }
 
-        // Establecer la autenticación en el contexto de seguridad
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        try {
+            // Autenticar al usuario utilizando Spring Security AuthenticationManager
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, password));
 
-        // Generar el token JWT con el nombre de usuario y los roles del usuario
-        List<String> roles = obtenerRolesDelUsuario(username);
-        String token = jwtTokenProvider.generateToken(username, roles);
+            // Establecer la autenticación en el contexto de seguridad
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Devolver el token JWT en la respuesta
-        return ResponseEntity.ok(token);
+            // Generar el token JWT con el nombre de usuario y los roles del usuario
+            List<String> roles = obtenerRolesDelUsuario(username);
+            String token = jwtTokenProvider.generateToken(username, roles);
+
+            // Devolver el token JWT en la respuesta
+            return ResponseEntity.ok(token);
+        } catch (BadCredentialsException ex) {
+            // Si las credenciales son incorrectas, lanzar una excepción personalizada
+            throw new CustomAuthenticationException("Credenciales incorrectas");
+        }
     }
+
+
 
     // Método para obtener los roles del usuario
     private List<String> obtenerRolesDelUsuario(String username) {

@@ -1,18 +1,16 @@
 package com.example.AhoraSiElLoginRepapaeldo.Config;
 
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
+import java.security.Key;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class JwtTokenProvider {
@@ -25,6 +23,8 @@ public class JwtTokenProvider {
     // Constantes para los nombres de las propiedades
     private static final String ROLES_CLAIM = "roles";
 
+    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+
     public String generateToken(String username, List<String> roles) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
@@ -34,7 +34,7 @@ public class JwtTokenProvider {
                 .claim(ROLES_CLAIM, roles)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(SignatureAlgorithm.HS512, jwtSecret)
+                .signWith(key)
                 .compact();
     }
 
